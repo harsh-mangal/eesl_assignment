@@ -1,0 +1,448 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum AccountStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+enum RfidStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  EXPIRED
+}
+
+enum VerificationResult {
+  VALID
+  INVALID
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum RoomStatus {
+  AVAILABLE
+  UNAVAILABLE
+  MAINTENANCE
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  SIMULATED
+  CASH
+  CARD
+  UPI
+}
+
+enum PaymentType {
+  INVOICE
+  ROOM_BOOKING
+  EVENT_BOOKING
+}
+
+enum NotificationType {
+  GENERAL
+  EVENT
+  BOOKING_CONFIRMATION
+  BOOKING_CANCELLATION
+  PAYMENT_REMINDER
+  MEMBERSHIP_EXPIRY
+}
+
+enum NotificationAudience {
+  ALL_MEMBERS
+  ACTIVE_MEMBERS
+  SELECTED_MEMBER
+  MEMBERSHIP_TYPE
+}
+
+enum ServiceType {
+  RESTAURANT
+  ROOM
+  EVENT
+}
+
+enum QrType {
+  MEMBERSHIP
+  RESTAURANT_BOOKING
+  EVENT_TICKET
+}
+
+enum QrStatus {
+  ACTIVE
+  USED
+  CANCELLED
+  EXPIRED
+}
+
+enum AdditionalServiceType {
+  LIBRARY
+  GYM
+  WORKSPACE
+  PARKING
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  role         Role
+  status       AccountStatus @default(ACTIVE)
+  memberId     String?       @unique
+  member       Member?       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([role, status])
+}
+
+model Member {
+  id               String      @id @default(cuid())
+  memberCode       String      @unique
+  fullName         String
+  email            String      @unique
+  mobileNumber     String
+  address          String
+  profilePhotoUrl  String?
+  dateOfBirth      DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  user             User?
+  membership       Membership?
+  rfidRecord       RfidRecord?
+  restaurantBookings RestaurantBooking[]
+  roomBookings     RoomBooking[]
+  eventBookings    EventBooking[]
+  invoices         Invoice[]
+  payments         Payment[]
+  notificationRecipients NotificationRecipient[]
+  feedback         Feedback[]
+  additionalServices AdditionalServiceAccount[]
+  qrTokens         QrToken[]
+}
+
+model Membership {
+  id                String           @id @default(cuid())
+  memberId          String           @unique
+  membershipType    String
+  status            MembershipStatus @default(ACTIVE)
+  validFrom         DateTime
+  validUntil        DateTime
+  digitalCardActive Boolean          @default(true)
+  verificationToken String           @unique
+  member            Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([status, validUntil])
+}
+
+model RfidRecord {
+  id                     String             @id @default(cuid())
+  memberId               String             @unique
+  referenceNumber        String             @unique
+  cardNumber             String             @unique
+  status                 RfidStatus
+  activationDate         DateTime?
+  expiryDate             DateTime
+  accessAllowed          Boolean            @default(false)
+  lastVerificationDate   DateTime?
+  lastVerificationResult VerificationResult?
+  member                 Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@index([status, expiryDate])
+}
+
+model Restaurant {
+  id            String             @id @default(cuid())
+  name          String
+  description   String             @db.Text
+  openingTime   String
+  closingTime   String
+  isActive      Boolean            @default(true)
+  imageUrl      String?
+  slots         RestaurantSlot[]
+  bookings      RestaurantBooking[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+model RestaurantSlot {
+  id                String              @id @default(cuid())
+  restaurantId      String
+  bookingDate       DateTime            @db.Date
+  startTime         String
+  endTime           String
+  capacity          Int
+  bookedCapacity    Int                 @default(0)
+  isAvailable       Boolean             @default(true)
+  restaurant        Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  bookings          RestaurantBooking[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([restaurantId, bookingDate, startTime])
+  @@index([bookingDate, isAvailable])
+}
+
+model RestaurantBooking {
+  id                  String          @id @default(cuid())
+  bookingNumber       String          @unique
+  memberId            String
+  restaurantId        String
+  slotId              String
+  guestCount          Int
+  specialInstructions String?         @db.Text
+  status              BookingStatus   @default(CONFIRMED)
+  qrToken              String          @unique
+  member               Member          @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  restaurant           Restaurant      @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  slot                 RestaurantSlot  @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  feedback             Feedback?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([memberId, status])
+  @@index([slotId, status])
+}
+
+model Room {
+  id            String       @id @default(cuid())
+  roomNumber    String       @unique
+  roomName      String
+  roomType      String
+  pricePerNight Decimal      @db.Decimal(10, 2)
+  guestCapacity Int
+  amenities     Json
+  status        RoomStatus   @default(AVAILABLE)
+  imageUrl      String?
+  bookings      RoomBooking[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model RoomBooking {
+  id            String        @id @default(cuid())
+  bookingNumber String        @unique
+  memberId      String
+  roomId        String
+  checkInDate   DateTime      @db.Date
+  checkOutDate  DateTime      @db.Date
+  guestCount    Int
+  numberOfNights Int
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  status        BookingStatus @default(CONFIRMED)
+  member        Member        @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  room          Room          @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  feedback      Feedback?
+  payments      Payment[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([roomId, checkInDate, checkOutDate])
+  @@index([memberId, status])
+}
+
+model Event {
+  id             String         @id @default(cuid())
+  title          String
+  description    String         @db.Text
+  category       String
+  eventDate      DateTime       @db.Date
+  startTime      String
+  endTime        String
+  venue           String
+  ticketPrice     Decimal        @db.Decimal(10, 2)
+  totalCapacity   Int
+  availableSeats  Int
+  status          EventStatus    @default(DRAFT)
+  bannerUrl       String?
+  bookings        EventBooking[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([eventDate, status])
+}
+
+model EventBooking {
+  id            String        @id @default(cuid())
+  bookingNumber String        @unique
+  ticketNumber  String        @unique
+  memberId      String
+  eventId       String
+  ticketQuantity Int
+  amount        Decimal       @db.Decimal(10, 2)
+  status        BookingStatus @default(CONFIRMED)
+  qrToken       String        @unique
+  checkedInAt   DateTime?
+  member        Member        @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  event         Event         @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  feedback      Feedback?
+  payments      Payment[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([eventId, status])
+  @@index([memberId, status])
+}
+
+model Invoice {
+  id          String        @id @default(cuid())
+  invoiceNumber String      @unique
+  memberId    String
+  description String        @db.Text
+  amount      Decimal       @db.Decimal(10, 2)
+  issueDate   DateTime      @db.Date
+  dueDate     DateTime      @db.Date
+  status      InvoiceStatus @default(UNPAID)
+  member      Member        @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  payment     Payment?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([memberId, status])
+  @@index([dueDate, status])
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  transactionId  String        @unique
+  memberId       String
+  invoiceId      String?       @unique
+  roomBookingId  String?
+  eventBookingId String?
+  amount         Decimal       @db.Decimal(10, 2)
+  paymentMethod  PaymentMethod
+  paymentType    PaymentType
+  status         PaymentStatus @default(SUCCESS)
+  paidAt         DateTime      @default(now())
+  member         Member        @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  invoice        Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  roomBooking    RoomBooking?  @relation(fields: [roomBookingId], references: [id], onDelete: Restrict)
+  eventBooking   EventBooking? @relation(fields: [eventBookingId], references: [id], onDelete: Restrict)
+  createdAt      DateTime      @default(now())
+
+  @@index([memberId, status, paidAt])
+}
+
+model Notification {
+  id             String               @id @default(cuid())
+  title          String
+  message        String               @db.Text
+  type           NotificationType
+  audience       NotificationAudience
+  membershipType String?
+  publishAt      DateTime             @default(now())
+  recipients     NotificationRecipient[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([publishAt, audience])
+}
+
+model NotificationRecipient {
+  id             String       @id @default(cuid())
+  notificationId String
+  memberId       String
+  isRead         Boolean      @default(false)
+  readAt         DateTime?
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  member         Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([notificationId, memberId])
+  @@index([memberId, isRead])
+}
+
+model Feedback {
+  id                    String             @id @default(cuid())
+  memberId              String
+  serviceType           ServiceType
+  restaurantBookingId   String?            @unique
+  roomBookingId         String?            @unique
+  eventBookingId        String?            @unique
+  rating                Int
+  comments              String             @db.Text
+  member                Member             @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  restaurantBooking     RestaurantBooking? @relation(fields: [restaurantBookingId], references: [id], onDelete: Restrict)
+  roomBooking           RoomBooking?       @relation(fields: [roomBookingId], references: [id], onDelete: Restrict)
+  eventBooking          EventBooking?      @relation(fields: [eventBookingId], references: [id], onDelete: Restrict)
+  createdAt             DateTime           @default(now())
+
+  @@index([serviceType, rating])
+}
+
+model AdditionalServiceAccount {
+  id                 String                @id @default(cuid())
+  memberId           String
+  serviceType        AdditionalServiceType
+  status             String
+  details            Json
+  validUntil         DateTime?
+  member             Member                @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@unique([memberId, serviceType])
+}
+
+model QrToken {
+  id             String   @id @default(cuid())
+  token          String   @unique
+  type           QrType
+  status         QrStatus @default(ACTIVE)
+  memberId       String
+  referenceId    String
+  usedAt         DateTime?
+  expiresAt      DateTime?
+  member         Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([type, status])
+  @@index([memberId, type])
+}

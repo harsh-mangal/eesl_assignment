@@ -1,0 +1,102 @@
+@baseUrl = http://localhost:4001/api
+@adminToken = paste-admin-token
+@memberToken = paste-member-token
+
+### Admin login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "admin@memberservices.test",
+  "password": "Admin@123"
+}
+
+### Member login with Member ID
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "MEM-1001",
+  "password": "Member@123"
+}
+
+### Member dashboard
+GET {{baseUrl}}/dashboard/member
+Authorization: Bearer {{memberToken}}
+
+### Membership card
+GET {{baseUrl}}/member/membership-card
+Authorization: Bearer {{memberToken}}
+
+### Admin dashboard
+GET {{baseUrl}}/dashboard/admin
+Authorization: Bearer {{adminToken}}
+
+### Admin members
+GET {{baseUrl}}/admin/members?page=1&limit=20
+Authorization: Bearer {{adminToken}}
+
+### Admin RFID
+GET {{baseUrl}}/admin/rfid?page=1&limit=20
+Authorization: Bearer {{adminToken}}
+
+### Verify membership QR
+POST {{baseUrl}}/admin/qr/verify
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "token": "MEMBERSHIP-MEM-1001-1000",
+  "checkIn": false
+}
+
+### Member restaurant availability
+GET {{baseUrl}}/restaurants?date=2026-07-16
+Authorization: Bearer {{memberToken}}
+
+### Create restaurant reservation (replace slotId)
+POST {{baseUrl}}/restaurants/bookings/create
+Authorization: Bearer {{memberToken}}
+Content-Type: application/json
+
+{
+  "slotId": "replace-slot-id",
+  "guestCount": 2,
+  "specialInstructions": "Window table preferred"
+}
+
+### Member room availability
+GET {{baseUrl}}/rooms/availability?checkInDate=2026-07-17&checkOutDate=2026-07-19&guestCount=2
+Authorization: Bearer {{memberToken}}
+
+### Create room booking (replace roomId)
+POST {{baseUrl}}/rooms/bookings/create
+Authorization: Bearer {{memberToken}}
+Content-Type: application/json
+
+{
+  "roomId": "replace-room-id",
+  "checkInDate": "2026-07-17",
+  "checkOutDate": "2026-07-19",
+  "guestCount": 2
+}
+
+### Member booking history
+GET {{baseUrl}}/bookings
+Authorization: Bearer {{memberToken}}
+
+### Admin restaurants and upcoming slots
+GET {{baseUrl}}/admin/restaurants
+Authorization: Bearer {{adminToken}}
+
+### Admin restaurant reservations
+GET {{baseUrl}}/admin/restaurants/bookings/list?page=1&limit=50
+Authorization: Bearer {{adminToken}}
+
+### Admin rooms
+GET {{baseUrl}}/admin/rooms
+Authorization: Bearer {{adminToken}}
+
+### Admin room bookings
+GET {{baseUrl}}/admin/rooms/bookings/list?page=1&limit=50
+Authorization: Bearer {{adminToken}}

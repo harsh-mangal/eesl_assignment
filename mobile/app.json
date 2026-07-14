@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Member Services",
+    "slug": "member-services",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#101828"
+    },
+    "android": {
+      "package": "com.memberservices.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#101828"
+      }
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.memberservices.app"
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font"
+    ]
+  }
+}
