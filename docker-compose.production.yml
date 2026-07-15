@@ -1,0 +1,60 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: member_services
+      MYSQL_USER: member_app
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4001
+      DATABASE_URL: mysql://member_app:${MYSQL_PASSWORD}@mysql:3306/member_services
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGINS: ${ADMIN_PUBLIC_URL}
+      PUBLIC_BASE_URL: ${API_PUBLIC_URL}
+      UPLOAD_PROVIDER: ${UPLOAD_PROVIDER:-local}
+      UPLOAD_DIR: uploads
+      MAX_UPLOAD_MB: 5
+      API_RATE_LIMIT_WINDOW_MS: 900000
+      API_RATE_LIMIT_MAX: 500
+      AUTH_RATE_LIMIT_MAX: 20
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      CLOUDINARY_FOLDER: member-services
+    volumes:
+      - uploads_data:/app/uploads
+    ports:
+      - "4001:4001"
+
+  admin:
+    build:
+      context: ./admin
+      args:
+        VITE_API_URL: ${API_PUBLIC_URL}/api
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "8080:80"
+
+volumes:
+  mysql_data:
+  uploads_data:

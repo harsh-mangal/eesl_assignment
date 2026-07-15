@@ -7,6 +7,7 @@ import { Screen } from '../components/Screen';
 import type { RootStackParamList } from '../navigation/types';
 import type { ApiResponse, RoomBooking } from '../types/api';
 import { formatLocalDate, parseLocalDate } from '../utils/date';
+import { resolveMediaUrl } from '../utils/media';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RoomBooking'>;
 
@@ -36,7 +37,7 @@ export function RoomBookingScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
-      {room.imageUrl ? <Image source={{ uri: room.imageUrl }} style={styles.image} /> : <View style={styles.imagePlaceholder}><Ionicons name="bed-outline" size={42} color="#98A2B3" /></View>}
+      {room.imageUrl ? <Image source={{ uri: resolveMediaUrl(room.imageUrl) }} style={styles.image} /> : <View style={styles.imagePlaceholder}><Ionicons name="bed-outline" size={42} color="#98A2B3" /></View>}
       <Text style={styles.title}>{room.roomName}</Text>
       <Text style={styles.meta}>Room {room.roomNumber} · {room.roomType} · up to {room.guestCapacity} guests</Text>
 

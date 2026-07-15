@@ -1,9 +1,15 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
+const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/$/, '');
+if (!configuredApiUrl && !__DEV__) {
+  throw new Error('EXPO_PUBLIC_API_URL must be configured for production builds.');
+}
+
 export const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:4001/api',
+  baseURL: configuredApiUrl || 'http://10.0.2.2:4001/api',
   timeout: 15000,
+  headers: { Accept: 'application/json' },
 });
 
 api.interceptors.request.use((config) => {

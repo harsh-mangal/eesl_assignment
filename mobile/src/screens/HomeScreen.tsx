@@ -8,20 +8,25 @@ import { Screen } from '../components/Screen';
 import { SummaryCard } from '../components/SummaryCard';
 import type { RootStackParamList } from '../navigation/types';
 import type { ApiResponse, MemberDashboard } from '../types/api';
+import { useNotificationStore } from '../store/notificationStore';
+import { resolveMediaUrl } from '../utils/media';
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [dashboard, setDashboard] = useState<MemberDashboard | null>(null);
+  const setUnreadCount = useNotificationStore((state) => state.setUnreadCount);
+  const unreadCount = useNotificationStore((state) => state.unreadCount);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const response = await api.get<ApiResponse<MemberDashboard>>('/dashboard/member');
       setDashboard(response.data.data);
+      setUnreadCount(response.data.data.summary.unreadNotifications);
     } catch (error) {
       Alert.alert('Unable to load dashboard', getApiError(error));
     }
-  }, []);
+  }, [setUnreadCount]);
 
   useEffect(() => {
     void load();
@@ -33,10 +38,6 @@ export function HomeScreen() {
     setRefreshing(false);
   };
 
-  const placeholder = (feature: string) => {
-    Alert.alert(feature, 'This module is connected in the next implementation phase.');
-  };
-
   return (
     <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
       <View style={styles.header}>
@@ -46,7 +47,7 @@ export function HomeScreen() {
           <Text style={styles.memberId}>{dashboard?.member.memberCode ?? 'Loading account...'}</Text>
         </View>
         <Image
-          source={{ uri: dashboard?.member.profilePhotoUrl || 'https://i.pravatar.cc/200?img=12' }}
+          source={{ uri: resolveMediaUrl(dashboard?.member.profilePhotoUrl, 'https://i.pravatar.cc/200?img=12') }}
           style={styles.avatar}
         />
       </View>
@@ -73,7 +74,7 @@ export function HomeScreen() {
         />
         <SummaryCard label="Upcoming bookings" value={dashboard?.summary.upcomingBookings ?? 0} icon="calendar-outline" />
         <SummaryCard label="Upcoming events" value={dashboard?.summary.upcomingEvents ?? 0} icon="ticket-outline" />
-        <SummaryCard label="Unread notifications" value={dashboard?.summary.unreadNotifications ?? 0} icon="notifications-outline" />
+        <SummaryCard label="Unread notifications" value={unreadCount} icon="notifications-outline" />
       </View>
 
       <Text style={styles.sectionTitle}>Quick services</Text>
@@ -83,10 +84,11 @@ export function HomeScreen() {
         icon="card-outline"
         onPress={() => navigation.navigate('MembershipCard')}
       />
-      <QuickAction title="Invoices" subtitle="View dues and receipts" icon="receipt-outline" onPress={() => placeholder('Invoices')} />
+      <QuickAction title="Invoices" subtitle="View dues, make simulated payments and open receipts" icon="receipt-outline" onPress={() => navigation.navigate('Invoices')} />
       <QuickAction title="Restaurant Booking" subtitle="Browse live slots and reserve a table" icon="restaurant-outline" onPress={() => navigation.navigate('RestaurantList')} />
       <QuickAction title="Room Booking" subtitle="Check date-range availability and book a stay" icon="bed-outline" onPress={() => navigation.navigate('RoomList')} />
-      <QuickAction title="Library Account" subtitle="View issued books, dues and fines" icon="library-outline" onPress={() => placeholder('Library Account')} />
+      <QuickAction title="Events & Tickets" subtitle="Book free or paid events and receive a QR ticket" icon="ticket-outline" onPress={() => navigation.navigate('MainTabs', { screen: 'Events' })} />
+      <QuickAction title="Library Account" subtitle="View issued books, dues and fines" icon="library-outline" onPress={() => navigation.navigate('LibraryAccount')} />
     </Screen>
   );
 }

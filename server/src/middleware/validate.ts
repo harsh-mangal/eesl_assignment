@@ -14,9 +14,11 @@ function replaceRequestProperty(request: Request, key: 'query' | 'params', value
 export const validate = (schema: ZodTypeAny) => {
   return (request: Request, _response: Response, next: NextFunction) => {
     const result = schema.safeParse({
-      body: request.body,
-      query: request.query,
-      params: request.params,
+      // GET/DELETE requests commonly have no body, so normalize missing
+      // request containers before passing them to schemas that expect objects.
+      body: request.body ?? {},
+      query: request.query ?? {},
+      params: request.params ?? {},
     });
 
     if (!result.success) {

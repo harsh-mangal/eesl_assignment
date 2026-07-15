@@ -316,8 +316,8 @@ async function main() {
         description: 'Annual club membership renewal fee',
         amount: 15000 + memberIndex * 1000,
         issueDate: atMidnight(-10),
-        dueDate: atMidnight(20),
-        status: InvoiceStatus.UNPAID,
+        dueDate: memberIndex === 0 ? atMidnight(-2) : atMidnight(20),
+        status: memberIndex === 0 ? InvoiceStatus.OVERDUE : InvoiceStatus.UNPAID,
       },
     });
 
@@ -349,25 +349,29 @@ async function main() {
     void unpaidInvoice;
   }
 
-  const firstSlot = await prisma.restaurantSlot.findFirstOrThrow({
-    where: { restaurantId: restaurants[0].id, bookingDate: atMidnight(1) },
-    orderBy: { startTime: 'asc' },
+  const historicalRestaurantSlot = await prisma.restaurantSlot.create({
+    data: {
+      restaurantId: restaurants[0].id,
+      bookingDate: atMidnight(-30),
+      startTime: '19:00',
+      endTime: '20:30',
+      capacity: 20,
+      bookedCapacity: 2,
+      isAvailable: false,
+    },
   });
   const restaurantBooking = await prisma.restaurantBooking.create({
     data: {
       bookingNumber: 'REST-2026-0001',
       memberId: members[0].id,
       restaurantId: restaurants[0].id,
-      slotId: firstSlot.id,
+      slotId: historicalRestaurantSlot.id,
       guestCount: 2,
       specialInstructions: 'Window table preferred.',
       status: BookingStatus.COMPLETED,
       qrToken: 'QR-REST-2026-0001',
+      createdAt: atMidnight(-35),
     },
-  });
-  await prisma.restaurantSlot.update({
-    where: { id: firstSlot.id },
-    data: { bookedCapacity: { increment: 2 } },
   });
   await prisma.qrToken.create({
     data: {
@@ -376,7 +380,8 @@ async function main() {
       status: QrStatus.USED,
       memberId: members[0].id,
       referenceId: restaurantBooking.id,
-      usedAt: new Date(),
+      usedAt: atMidnight(-30),
+      expiresAt: atMidnight(-29),
     },
   });
 
@@ -385,31 +390,46 @@ async function main() {
       bookingNumber: 'ROOM-2026-0001',
       memberId: members[1].id,
       roomId: rooms[0].id,
-      checkInDate: atMidnight(2),
-      checkOutDate: atMidnight(4),
+      checkInDate: atMidnight(-40),
+      checkOutDate: atMidnight(-38),
       guestCount: 2,
       numberOfNights: 2,
       totalAmount: 13000,
-      status: BookingStatus.CONFIRMED,
+      status: BookingStatus.COMPLETED,
+      createdAt: atMidnight(-45),
     },
   });
 
+  const historicalEvent = await prisma.event.create({
+    data: {
+      title: 'Member Heritage Evening',
+      description: 'A completed member cultural evening retained for booking and attendance history.',
+      category: 'Social',
+      eventDate: atMidnight(-20),
+      startTime: '19:00',
+      endTime: '22:00',
+      venue: 'Grand Ballroom',
+      ticketPrice: 1200,
+      totalCapacity: 120,
+      availableSeats: 118,
+      status: EventStatus.COMPLETED,
+      bannerUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?event=history',
+      createdAt: atMidnight(-60),
+    },
+  });
   const eventBooking = await prisma.eventBooking.create({
     data: {
       bookingNumber: 'EVENT-2026-0001',
       ticketNumber: 'TKT-2026-0001',
       memberId: members[2].id,
-      eventId: events[0].id,
+      eventId: historicalEvent.id,
       ticketQuantity: 2,
       amount: 2400,
       status: BookingStatus.COMPLETED,
       qrToken: 'QR-EVENT-2026-0001',
-      checkedInAt: new Date(),
+      checkedInAt: atMidnight(-20),
+      createdAt: atMidnight(-25),
     },
-  });
-  await prisma.event.update({
-    where: { id: events[0].id },
-    data: { availableSeats: { decrement: 2 } },
   });
   await prisma.qrToken.create({
     data: {
@@ -419,6 +439,19 @@ async function main() {
       memberId: members[2].id,
       referenceId: eventBooking.id,
       usedAt: eventBooking.checkedInAt,
+      expiresAt: atMidnight(-19),
+    },
+  });
+  await prisma.payment.create({
+    data: {
+      transactionId: 'TXN-SEED-EVENT-0001',
+      memberId: members[2].id,
+      eventBookingId: eventBooking.id,
+      amount: eventBooking.amount,
+      paymentMethod: PaymentMethod.UPI,
+      paymentType: PaymentType.EVENT_BOOKING,
+      status: PaymentStatus.SUCCESS,
+      paidAt: atMidnight(-25),
     },
   });
 
@@ -448,33 +481,82 @@ async function main() {
     ],
   });
 
-  const notificationSeeds = [
-    ['Welcome to Member Services', 'Your integrated member services account is ready.', NotificationType.GENERAL],
-    ['Upcoming Jazz Evening', 'Bookings are open for Jazz Under the Stars.', NotificationType.EVENT],
-    ['Payment Reminder', 'Your annual membership invoice is due soon.', NotificationType.PAYMENT_REMINDER],
-    ['Restaurant Booking Tip', 'Reserve weekend dinner slots early to avoid missing out.', NotificationType.GENERAL],
-    ['Membership Benefits', 'Explore your library account and other club privileges.', NotificationType.GENERAL],
-  ] as const;
+  const notificationSeeds: Array<{
+    title: string;
+    message: string;
+    type: NotificationType;
+    audience: NotificationAudience;
+    membershipType?: string;
+    publishAt?: Date;
+    memberIds: string[];
+  }> = [
+    {
+      title: 'Welcome to Member Services',
+      message: 'Your integrated member services account is ready.',
+      type: NotificationType.GENERAL,
+      audience: NotificationAudience.ALL_MEMBERS,
+      memberIds: members.map((member) => member.id),
+    },
+    {
+      title: 'Upcoming Jazz Evening',
+      message: 'Bookings are open for Jazz Under the Stars.',
+      type: NotificationType.EVENT,
+      audience: NotificationAudience.ACTIVE_MEMBERS,
+      memberIds: members.filter((member) => member.membership?.status === MembershipStatus.ACTIVE).map((member) => member.id),
+    },
+    {
+      title: 'Payment Reminder',
+      message: 'Your annual membership invoice is due soon.',
+      type: NotificationType.PAYMENT_REMINDER,
+      audience: NotificationAudience.SELECTED_MEMBER,
+      memberIds: [members[0].id],
+    },
+    {
+      title: 'Gold Member Dining Preview',
+      message: 'Gold members can reserve the new chef table preview this weekend.',
+      type: NotificationType.GENERAL,
+      audience: NotificationAudience.MEMBERSHIP_TYPE,
+      membershipType: 'Gold',
+      memberIds: members.filter((member) => member.membership?.membershipType === 'Gold').map((member) => member.id),
+    },
+    {
+      title: 'Restaurant Booking Tip',
+      message: 'Reserve weekend dinner slots early to avoid missing out.',
+      type: NotificationType.BOOKING_CONFIRMATION,
+      audience: NotificationAudience.ALL_MEMBERS,
+      memberIds: members.map((member) => member.id),
+    },
+    {
+      title: 'Next Week Membership Benefits',
+      message: 'A new member-benefits announcement has been scheduled for next week.',
+      type: NotificationType.MEMBERSHIP_EXPIRY,
+      audience: NotificationAudience.ACTIVE_MEMBERS,
+      publishAt: atMidnight(7),
+      memberIds: members.filter((member) => member.membership?.status === MembershipStatus.ACTIVE).map((member) => member.id),
+    },
+  ];
 
-  for (const [title, message, type] of notificationSeeds) {
+  for (const [notificationIndex, seed] of notificationSeeds.entries()) {
     const notification = await prisma.notification.create({
       data: {
-        title,
-        message,
-        type,
-        audience: NotificationAudience.ALL_MEMBERS,
-        publishAt: new Date(),
+        title: seed.title,
+        message: seed.message,
+        type: seed.type,
+        audience: seed.audience,
+        membershipType: seed.membershipType ?? null,
+        publishAt: seed.publishAt ?? new Date(),
       },
     });
     await prisma.notificationRecipient.createMany({
-      data: members.map((member, index) => ({
+      data: seed.memberIds.map((memberId, recipientIndex) => ({
         notificationId: notification.id,
-        memberId: member.id,
-        isRead: index === 4,
-        readAt: index === 4 ? new Date() : null,
+        memberId,
+        isRead: notificationIndex < 2 && recipientIndex === seed.memberIds.length - 1,
+        readAt: notificationIndex < 2 && recipientIndex === seed.memberIds.length - 1 ? new Date() : null,
       })),
     });
   }
+
 
   console.log('Seed completed successfully.');
   console.log('Admin: admin@memberservices.test / Admin@123');

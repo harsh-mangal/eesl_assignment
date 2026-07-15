@@ -100,3 +100,301 @@ Authorization: Bearer {{adminToken}}
 ### Admin room bookings
 GET {{baseUrl}}/admin/rooms/bookings/list?page=1&limit=50
 Authorization: Bearer {{adminToken}}
+
+### Member event catalogue
+GET {{baseUrl}}/events?filter=UPCOMING
+Authorization: Bearer {{memberToken}}
+
+### Member event details (replace eventId)
+GET {{baseUrl}}/events/replace-event-id
+Authorization: Bearer {{memberToken}}
+
+### Book a paid event with simulated UPI payment (replace eventId)
+POST {{baseUrl}}/events/replace-event-id/book
+Authorization: Bearer {{memberToken}}
+Content-Type: application/json
+
+{
+  "ticketQuantity": 2,
+  "paymentMethod": "UPI"
+}
+
+### Cancel own event ticket (replace bookingId)
+PATCH {{baseUrl}}/events/bookings/replace-booking-id/cancel
+Authorization: Bearer {{memberToken}}
+
+### Member payment history
+GET {{baseUrl}}/payments?page=1&limit=30
+Authorization: Bearer {{memberToken}}
+
+### Admin event catalogue
+GET {{baseUrl}}/admin/events
+Authorization: Bearer {{adminToken}}
+
+### Create event
+POST {{baseUrl}}/admin/events
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Members Technology Evening",
+  "description": "A networking and technology showcase for club members.",
+  "category": "Technology",
+  "eventDate": "2026-07-25",
+  "startTime": "18:00",
+  "endTime": "21:00",
+  "venue": "Grand Ballroom",
+  "ticketPrice": 750,
+  "totalCapacity": 120,
+  "status": "PUBLISHED",
+  "bannerUrl": ""
+}
+
+### Admin event ticket list
+GET {{baseUrl}}/admin/events/bookings/list?page=1&limit=100
+Authorization: Bearer {{adminToken}}
+
+### Admin payment list
+GET {{baseUrl}}/admin/payments?page=1&limit=100&paymentType=EVENT_BOOKING
+Authorization: Bearer {{adminToken}}
+
+### Verify event QR without consuming it
+POST {{baseUrl}}/admin/qr/verify
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "token": "paste-event-qr-token",
+  "checkIn": false
+}
+
+### Verify and atomically check in event QR
+POST {{baseUrl}}/admin/qr/verify
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "token": "paste-event-qr-token",
+  "checkIn": true
+}
+
+
+### Member invoice list
+GET {{baseUrl}}/invoices?filter=ALL&page=1&limit=30
+Authorization: Bearer {{memberToken}}
+
+### Member invoice details (replace invoiceId)
+GET {{baseUrl}}/invoices/replace-invoice-id
+Authorization: Bearer {{memberToken}}
+
+### Pay invoice once with simulated UPI (replace invoiceId)
+POST {{baseUrl}}/invoices/replace-invoice-id/pay
+Authorization: Bearer {{memberToken}}
+Content-Type: application/json
+
+{
+  "paymentMethod": "UPI"
+}
+
+### Admin invoice list
+GET {{baseUrl}}/admin/invoices?page=1&limit=100
+Authorization: Bearer {{adminToken}}
+
+### Create invoice (replace memberId)
+POST {{baseUrl}}/admin/invoices
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "memberId": "replace-member-id",
+  "description": "Special facility contribution",
+  "amount": 2750,
+  "issueDate": "2026-07-15",
+  "dueDate": "2026-08-15"
+}
+
+### Update unpaid invoice (replace invoiceId)
+PATCH {{baseUrl}}/admin/invoices/replace-invoice-id
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "description": "Updated facility contribution",
+  "amount": 3000
+}
+
+### Cancel unpaid invoice (replace invoiceId)
+PATCH {{baseUrl}}/admin/invoices/replace-invoice-id/cancel
+Authorization: Bearer {{adminToken}}
+
+### Member notification list
+GET {{baseUrl}}/notifications?filter=ALL&page=1&limit=30
+Authorization: Bearer {{memberToken}}
+
+### Member unread notification count
+GET {{baseUrl}}/notifications/unread-count
+Authorization: Bearer {{memberToken}}
+
+### Member notification details (replace notificationId)
+GET {{baseUrl}}/notifications/replace-notification-id
+Authorization: Bearer {{memberToken}}
+
+### Mark one member notification as read (replace notificationId)
+PATCH {{baseUrl}}/notifications/replace-notification-id/read
+Authorization: Bearer {{memberToken}}
+
+### Mark all published member notifications as read
+PATCH {{baseUrl}}/notifications/read-all
+Authorization: Bearer {{memberToken}}
+
+### Admin notification list
+GET {{baseUrl}}/admin/notifications?page=1&limit=100
+Authorization: Bearer {{adminToken}}
+
+### Create immediate notification for all members
+POST {{baseUrl}}/admin/notifications
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Member Services Update",
+  "message": "A new member-services announcement is now available.",
+  "type": "GENERAL",
+  "audience": "ALL_MEMBERS",
+  "publishAt": "2026-07-15T04:30:00.000Z"
+}
+
+### Create selected-member notification (replace memberId)
+POST {{baseUrl}}/admin/notifications
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Payment Reminder",
+  "message": "Please review your outstanding invoice.",
+  "type": "PAYMENT_REMINDER",
+  "audience": "SELECTED_MEMBER",
+  "selectedMemberId": "replace-member-id",
+  "publishAt": "2026-07-15T04:30:00.000Z"
+}
+
+### Admin notification recipient details (replace notificationId)
+GET {{baseUrl}}/admin/notifications/replace-notification-id
+Authorization: Bearer {{adminToken}}
+
+### Member feedback history
+GET {{baseUrl}}/feedback
+Authorization: Bearer {{memberToken}}
+
+### Submit feedback for a completed booking (replace bookingId)
+POST {{baseUrl}}/feedback
+Authorization: Bearer {{memberToken}}
+Content-Type: application/json
+
+{
+  "serviceType": "RESTAURANT",
+  "bookingId": "replace-completed-booking-id",
+  "rating": 5,
+  "comments": "Excellent service and a smooth booking experience."
+}
+
+### Member library account
+GET {{baseUrl}}/additional-services/LIBRARY
+Authorization: Bearer {{memberToken}}
+
+### Member additional-service list
+GET {{baseUrl}}/additional-services
+Authorization: Bearer {{memberToken}}
+
+### Admin feedback list
+GET {{baseUrl}}/admin/feedback?page=1&limit=100
+Authorization: Bearer {{adminToken}}
+
+### Admin feedback filters
+GET {{baseUrl}}/admin/feedback?serviceType=RESTAURANT&rating=5&search=excellent&page=1&limit=100
+Authorization: Bearer {{adminToken}}
+
+### Member report
+GET {{baseUrl}}/admin/reports/MEMBERS?status=ACTIVE&search=MEM-1001&dateFrom=2026-01-01&dateTo=2026-12-31
+Authorization: Bearer {{adminToken}}
+
+### Consolidated booking report
+GET {{baseUrl}}/admin/reports/BOOKINGS?dateFrom=2026-07-01&dateTo=2026-12-31
+Authorization: Bearer {{adminToken}}
+
+### Payment report
+GET {{baseUrl}}/admin/reports/PAYMENTS?status=SUCCESS&dateFrom=2026-01-01&dateTo=2026-12-31
+Authorization: Bearer {{adminToken}}
+
+### Room availability report
+GET {{baseUrl}}/admin/reports/ROOM_AVAILABILITY?dateFrom=2026-07-20&dateTo=2026-07-24
+Authorization: Bearer {{adminToken}}
+
+### Restaurant booking report
+GET {{baseUrl}}/admin/reports/RESTAURANT_BOOKINGS?status=CONFIRMED
+Authorization: Bearer {{adminToken}}
+
+### Event booking report
+GET {{baseUrl}}/admin/reports/EVENT_BOOKINGS
+Authorization: Bearer {{adminToken}}
+
+### Event attendance report
+GET {{baseUrl}}/admin/reports/EVENT_ATTENDANCE?status=CHECKED_IN
+Authorization: Bearer {{adminToken}}
+
+### Feedback report
+GET {{baseUrl}}/admin/reports/FEEDBACK?status=5
+Authorization: Bearer {{adminToken}}
+
+### RFID status report
+GET {{baseUrl}}/admin/reports/RFID_STATUS?status=ACTIVE
+Authorization: Bearer {{adminToken}}
+
+### Upload own member profile photo
+# @name uploadProfilePhoto
+POST {{baseUrl}}/member/profile/photo
+Authorization: Bearer {{memberToken}}
+Content-Type: multipart/form-data; boundary=MemberServicesBoundary
+
+--MemberServicesBoundary
+Content-Disposition: form-data; name="image"; filename="profile.jpg"
+Content-Type: image/jpeg
+
+< ./samples/profile.jpg
+--MemberServicesBoundary--
+
+### Upload an Admin-managed member photo
+POST {{baseUrl}}/admin/members/{{memberId}}/photo
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=MemberServicesBoundary
+
+--MemberServicesBoundary
+Content-Disposition: form-data; name="image"; filename="member.jpg"
+Content-Type: image/jpeg
+
+< ./samples/member.jpg
+--MemberServicesBoundary--
+
+### Upload room image
+POST {{baseUrl}}/admin/rooms/{{roomId}}/image
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=MemberServicesBoundary
+
+--MemberServicesBoundary
+Content-Disposition: form-data; name="image"; filename="room.webp"
+Content-Type: image/webp
+
+< ./samples/room.webp
+--MemberServicesBoundary--
+
+### Upload event banner
+POST {{baseUrl}}/admin/events/{{eventId}}/banner
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=MemberServicesBoundary
+
+--MemberServicesBoundary
+Content-Disposition: form-data; name="image"; filename="event.png"
+Content-Type: image/png
+
+< ./samples/event.png
+--MemberServicesBoundary--

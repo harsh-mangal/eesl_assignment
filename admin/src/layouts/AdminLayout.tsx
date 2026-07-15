@@ -6,6 +6,14 @@ import {
   PeopleAltOutlined,
   RestaurantOutlined,
   HotelOutlined,
+  EventOutlined,
+  CalendarMonthOutlined,
+  PaymentsOutlined,
+  ReceiptLongOutlined,
+  QrCodeScannerOutlined,
+  NotificationsActiveOutlined,
+  RateReviewOutlined,
+  AssessmentOutlined,
 } from '@mui/icons-material';
 import {
   AppBar,
@@ -34,6 +42,14 @@ const navigation = [
   { label: 'RFID Records', path: '/rfid', icon: <BadgeOutlined /> },
   { label: 'Restaurants', path: '/restaurants', icon: <RestaurantOutlined /> },
   { label: 'Rooms', path: '/rooms', icon: <HotelOutlined /> },
+  { label: 'Events', path: '/events', icon: <EventOutlined /> },
+  { label: 'Bookings', path: '/bookings', icon: <CalendarMonthOutlined /> },
+  { label: 'Invoices', path: '/invoices', icon: <ReceiptLongOutlined /> },
+  { label: 'Payments', path: '/payments', icon: <PaymentsOutlined /> },
+  { label: 'Notifications', path: '/notifications', icon: <NotificationsActiveOutlined /> },
+  { label: 'Feedback', path: '/feedback', icon: <RateReviewOutlined /> },
+  { label: 'Reports', path: '/reports', icon: <AssessmentOutlined /> },
+  { label: 'QR Verification', path: '/qr-verification', icon: <QrCodeScannerOutlined /> },
 ];
 
 export function AdminLayout() {

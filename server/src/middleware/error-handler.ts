@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
+import multer from 'multer';
 import { ZodError } from 'zod';
 import { ApiError } from '../utils/api-error.js';
 
@@ -13,6 +14,14 @@ export function errorHandler(
   response: Response,
   _next: NextFunction,
 ) {
+
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return response.status(413).json({ success: false, message: 'The selected image is too large.' });
+    }
+    return response.status(422).json({ success: false, message: `Upload failed: ${error.message}` });
+  }
+
   if (error instanceof ApiError) {
     return response.status(error.statusCode).json({
       success: false,

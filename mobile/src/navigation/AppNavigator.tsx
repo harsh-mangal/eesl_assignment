@@ -14,9 +14,22 @@ import { RestaurantBookingScreen } from '../screens/RestaurantBookingScreen';
 import { RoomListScreen } from '../screens/RoomListScreen';
 import { RoomBookingScreen } from '../screens/RoomBookingScreen';
 import { MyBookingsScreen } from '../screens/MyBookingsScreen';
-import { ModulePlaceholderScreen } from '../screens/ModulePlaceholderScreen';
+import { EventsScreen } from '../screens/EventsScreen';
+import { EventDetailsScreen } from '../screens/EventDetailsScreen';
+import { EventTicketScreen } from '../screens/EventTicketScreen';
+import { InvoicesScreen } from '../screens/InvoicesScreen';
+import { InvoiceDetailsScreen } from '../screens/InvoiceDetailsScreen';
+import { InvoicePaymentScreen } from '../screens/InvoicePaymentScreen';
+import { PaymentReceiptScreen } from '../screens/PaymentReceiptScreen';
+import { PaymentHistoryScreen } from '../screens/PaymentHistoryScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
+import { NotificationDetailsScreen } from '../screens/NotificationDetailsScreen';
+import { BookingDetailsScreen } from '../screens/BookingDetailsScreen';
+import { FeedbackScreen } from '../screens/FeedbackScreen';
+import { LibraryAccountScreen } from '../screens/LibraryAccountScreen';
 import { useAuthStore } from '../store/authStore';
+import { useNotificationStore } from '../store/notificationStore';
 import type { ApiResponse, MemberSession } from '../types/api';
 import type { MainTabParamList, RootStackParamList } from './types';
 
@@ -35,6 +48,8 @@ const icons: Record<keyof MainTabParamList, { active: IconName; inactive: IconNa
 };
 
 function MainTabs() {
+  const unreadCount = useNotificationStore((state) => state.unreadCount);
+
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
@@ -43,6 +58,8 @@ function MainTabs() {
         tabBarInactiveTintColor: '#667085',
         tabBarStyle: { height: 66, paddingTop: 7, paddingBottom: 7, borderTopColor: '#EAECF0' },
         tabBarLabelStyle: { fontSize: 10, fontWeight: '700' },
+        tabBarBadge: route.name === 'Notifications' && unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined,
+        tabBarBadgeStyle: { backgroundColor: '#D92D20', color: '#FFFFFF', fontSize: 9, fontWeight: '800' },
         tabBarIcon: ({ focused, color, size }) => (
           <Ionicons
             name={focused ? icons[route.name].active : icons[route.name].inactive}
@@ -54,24 +71,8 @@ function MainTabs() {
     >
       <Tabs.Screen name="Home" component={HomeScreen} />
       <Tabs.Screen name="Bookings" component={MyBookingsScreen} />
-      <Tabs.Screen name="Events">
-        {() => (
-          <ModulePlaceholderScreen
-            title="Events"
-            description="Upcoming events, filters, ticket selection, payment and QR tickets will be connected here."
-            icon="ticket-outline"
-          />
-        )}
-      </Tabs.Screen>
-      <Tabs.Screen name="Notifications">
-        {() => (
-          <ModulePlaceholderScreen
-            title="Notifications"
-            description="Database-driven announcements, reminders and read/unread management will be connected here."
-            icon="notifications-outline"
-          />
-        )}
-      </Tabs.Screen>
+      <Tabs.Screen name="Events" component={EventsScreen} />
+      <Tabs.Screen name="Notifications" component={NotificationsScreen} />
       <Tabs.Screen name="Profile" component={ProfileScreen} />
     </Tabs.Navigator>
   );
@@ -82,11 +83,14 @@ export function AppNavigator() {
   const hydrated = useAuthStore((state) => state.hydrated);
   const clearSession = useAuthStore((state) => state.clearSession);
   const setSession = useAuthStore((state) => state.setSession);
+  const setUnreadCount = useNotificationStore((state) => state.setUnreadCount);
+  const resetNotificationCount = useNotificationStore((state) => state.reset);
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
     if (!hydrated) return;
     if (!token) {
+      resetNotificationCount();
       setCheckingSession(false);
       return;
     }
@@ -102,6 +106,9 @@ export function AppNavigator() {
           return;
         }
         setSession(token, response.data.data);
+        void api.get<ApiResponse<{ unreadCount: number }>>('/notifications/unread-count')
+          .then((countResponse) => { if (active) setUnreadCount(countResponse.data.data.unreadCount); })
+          .catch(() => undefined);
       })
       .catch(() => {
         if (active) clearSession();
@@ -113,7 +120,7 @@ export function AppNavigator() {
     return () => {
       active = false;
     };
-  }, [hydrated, token, clearSession, setSession]);
+  }, [hydrated, token, clearSession, setSession, setUnreadCount, resetNotificationCount]);
 
   if (!hydrated || checkingSession) return <LoadingView />;
 
@@ -130,10 +137,21 @@ export function AppNavigator() {
         >
           <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
           <Stack.Screen name="MembershipCard" component={MembershipCardScreen} options={{ title: 'Membership Card' }} />
+          <Stack.Screen name="Invoices" component={InvoicesScreen} options={{ title: 'Invoices' }} />
+          <Stack.Screen name="InvoiceDetails" component={InvoiceDetailsScreen} options={{ title: 'Invoice Details' }} />
+          <Stack.Screen name="InvoicePayment" component={InvoicePaymentScreen} options={{ title: 'Payment' }} />
+          <Stack.Screen name="PaymentReceipt" component={PaymentReceiptScreen} options={{ title: 'Payment Receipt', headerBackVisible: false }} />
+          <Stack.Screen name="PaymentHistory" component={PaymentHistoryScreen} options={{ title: 'Payment History' }} />
+          <Stack.Screen name="NotificationDetails" component={NotificationDetailsScreen} options={{ title: 'Notification' }} />
+          <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} options={{ title: 'Booking Details' }} />
+          <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ title: 'Service Feedback' }} />
+          <Stack.Screen name="LibraryAccount" component={LibraryAccountScreen} options={{ title: 'Library Account' }} />
           <Stack.Screen name="RestaurantList" component={RestaurantListScreen} options={{ title: 'Restaurants' }} />
           <Stack.Screen name="RestaurantBooking" component={RestaurantBookingScreen} options={{ title: 'Confirm Reservation' }} />
           <Stack.Screen name="RoomList" component={RoomListScreen} options={{ title: 'Room Availability' }} />
           <Stack.Screen name="RoomBooking" component={RoomBookingScreen} options={{ title: 'Confirm Room' }} />
+          <Stack.Screen name="EventDetails" component={EventDetailsScreen} options={{ title: 'Event Details' }} />
+          <Stack.Screen name="EventTicket" component={EventTicketScreen} options={{ title: 'Your Ticket', headerBackVisible: false }} />
         </Stack.Navigator>
       ) : (
         <AuthStack.Navigator screenOptions={{ headerShown: false }}>

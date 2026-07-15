@@ -144,8 +144,8 @@ model Member {
   fullName         String
   email            String      @unique
   mobileNumber     String
-  address          String
-  profilePhotoUrl  String?
+  address          String      @db.Text
+  profilePhotoUrl  String?     @db.Text
   dateOfBirth      DateTime?
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
@@ -204,7 +204,7 @@ model Restaurant {
   openingTime   String
   closingTime   String
   isActive      Boolean            @default(true)
-  imageUrl      String?
+  imageUrl      String?            @db.Text
   slots         RestaurantSlot[]
   bookings      RestaurantBooking[]
   createdAt     DateTime           @default(now())
@@ -259,7 +259,7 @@ model Room {
   guestCapacity Int
   amenities     Json
   status        RoomStatus   @default(AVAILABLE)
-  imageUrl      String?
+  imageUrl      String?      @db.Text
   bookings      RoomBooking[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -300,7 +300,7 @@ model Event {
   totalCapacity   Int
   availableSeats  Int
   status          EventStatus    @default(DRAFT)
-  bannerUrl       String?
+  bannerUrl       String?         @db.Text
   bookings        EventBooking[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt

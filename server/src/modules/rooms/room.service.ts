@@ -247,3 +247,10 @@ export async function updateRoomBookingStatus(id: string, status: BookingStatus)
   const updated = await prisma.roomBooking.update({ where: { id }, data: { status }, include: { room: true } });
   return serializeRoomBooking(updated);
 }
+
+export async function replaceRoomImage(id: string, imageUrl: string) {
+  const existing = await prisma.room.findUnique({ where: { id }, select: { imageUrl: true } });
+  if (!existing) throw new ApiError(404, 'Room not found.');
+  const room = await prisma.room.update({ where: { id }, data: { imageUrl } });
+  return { data: serializeRoom(room), previousUrl: existing.imageUrl };
+}

@@ -6,6 +6,7 @@ import { api, getApiError } from '../api/client';
 import { LoadingView } from '../components/LoadingView';
 import { Screen } from '../components/Screen';
 import type { ApiResponse, MembershipCard } from '../types/api';
+import { resolveMediaUrl } from '../utils/media';
 
 export function MembershipCardScreen() {
   const [card, setCard] = useState<MembershipCard | null>(null);
@@ -39,7 +40,7 @@ export function MembershipCardScreen() {
         </View>
 
         <View style={styles.memberRow}>
-          <Image source={{ uri: card.member.profilePhotoUrl || 'https://i.pravatar.cc/200?img=12' }} style={styles.avatar} />
+          <Image source={{ uri: resolveMediaUrl(card.member.profilePhotoUrl, 'https://i.pravatar.cc/200?img=12') }} style={styles.avatar} />
           <View style={styles.memberDetails}>
             <Text style={styles.name}>{card.member.fullName}</Text>
             <Text style={styles.memberCode}>{card.member.memberCode}</Text>

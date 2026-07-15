@@ -1,6 +1,7 @@
-import { BookingStatus, MembershipStatus, QrStatus, QrType } from '@prisma/client';
+import { BookingStatus, EventStatus, MembershipStatus, QrStatus, QrType } from '@prisma/client';
 import { prisma } from '../../config/prisma.js';
 import { ApiError } from '../../utils/api-error.js';
+import { withSerializableRetry } from '../../utils/transactions.js';
 
 export async function verifyQr(token: string, checkIn: boolean) {
   const qr = await prisma.qrToken.findUnique({
@@ -96,14 +97,20 @@ export async function verifyQr(token: string, checkIn: boolean) {
     };
   }
 
-  if (qr.status !== QrStatus.ACTIVE || booking.status === BookingStatus.CANCELLED) {
+  if (
+    qr.status !== QrStatus.ACTIVE ||
+    ![BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(booking.status) ||
+    booking.event.status !== EventStatus.PUBLISHED
+  ) {
     return {
       valid: false,
       qrType: qr.type,
       currentStatus: qr.status,
       member: qr.member,
       booking,
-      reason: 'Event ticket is cancelled, expired or inactive.',
+      reason: booking.event.status === EventStatus.CANCELLED
+        ? 'The event has been cancelled.'
+        : 'Event ticket is cancelled, expired or inactive.',
     };
   }
 
@@ -119,23 +126,33 @@ export async function verifyQr(token: string, checkIn: boolean) {
   }
 
   const checkedInAt = new Date();
-  const checkedIn = await prisma.$transaction(async (transaction) => {
-    const freshQr = await transaction.qrToken.findUnique({ where: { id: qr.id } });
-    const freshBooking = await transaction.eventBooking.findUnique({ where: { id: booking.id } });
-
-    if (!freshQr || !freshBooking || freshQr.status !== QrStatus.ACTIVE || freshBooking.checkedInAt) {
+  const checkedIn = await withSerializableRetry(async (transaction) => {
+    const consumedQr = await transaction.qrToken.updateMany({
+      where: { id: qr.id, status: QrStatus.ACTIVE },
+      data: { status: QrStatus.USED, usedAt: checkedInAt },
+    });
+    if (consumedQr.count !== 1) {
       throw new ApiError(409, 'This event ticket has already been checked in.');
     }
 
-    await transaction.qrToken.update({
-      where: { id: qr.id },
-      data: { status: QrStatus.USED, usedAt: checkedInAt },
+    const consumedBooking = await transaction.eventBooking.updateMany({
+      where: {
+        id: booking.id,
+        checkedInAt: null,
+        status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED] },
+      },
+      data: { checkedInAt, status: BookingStatus.COMPLETED },
     });
-    return transaction.eventBooking.update({
+    if (consumedBooking.count !== 1) {
+      throw new ApiError(409, 'This event ticket is not eligible for check-in.');
+    }
+
+    const updated = await transaction.eventBooking.findUnique({
       where: { id: booking.id },
-      data: { checkedInAt },
       include: { event: true },
     });
+    if (!updated) throw new ApiError(404, 'Event booking was not found.');
+    return updated;
   });
 
   return {

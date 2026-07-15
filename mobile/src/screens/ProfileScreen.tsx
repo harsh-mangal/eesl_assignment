@@ -1,3 +1,4 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,10 +10,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { api, getApiError } from '../api/client';
 import { Screen } from '../components/Screen';
 import { useAuthStore } from '../store/authStore';
 import type { ApiResponse, MemberProfile } from '../types/api';
+import { resolveMediaUrl } from '../utils/media';
 
 export function ProfileScreen() {
   const clearSession = useAuthStore((state) => state.clearSession);
@@ -21,6 +24,7 @@ export function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -39,6 +43,68 @@ export function ProfileScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const uploadPhoto = async (asset: ImagePicker.ImagePickerAsset) => {
+    setUploadingPhoto(true);
+    try {
+      const form = new FormData();
+      form.append('image', {
+        uri: asset.uri,
+        name: asset.fileName || `profile-${Date.now()}.jpg`,
+        type: asset.mimeType || 'image/jpeg',
+      } as unknown as Blob);
+      const response = await api.post<ApiResponse<MemberProfile>>('/member/profile/photo', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 45000,
+      });
+      setProfile(response.data.data);
+      Alert.alert('Photo updated', 'Your new profile photo is now visible on your membership card.');
+    } catch (error) {
+      Alert.alert('Upload failed', getApiError(error));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const choosePhoto = () => {
+    Alert.alert('Update profile photo', 'Choose an image source.', [
+      {
+        text: 'Camera',
+        onPress: () => void (async () => {
+          const permission = await ImagePicker.requestCameraPermissionsAsync();
+          if (!permission.granted) {
+            Alert.alert('Camera permission required', 'Allow camera access to take a profile photo.');
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.82,
+          });
+          if (!result.canceled) await uploadPhoto(result.assets[0]);
+        })(),
+      },
+      {
+        text: 'Photo library',
+        onPress: () => void (async () => {
+          const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!permission.granted) {
+            Alert.alert('Photo permission required', 'Allow photo access to select a profile picture.');
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.82,
+          });
+          if (!result.canceled) await uploadPhoto(result.assets[0]);
+        })(),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   const save = async () => {
     if (!mobileNumber.trim() || !email.trim() || !address.trim()) {
@@ -71,19 +137,32 @@ export function ProfileScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
       <Text style={styles.title}>My Profile</Text>
-      <Text style={styles.subtitle}>Update your contact details. Membership fields are managed by administrators.</Text>
+      <Text style={styles.subtitle}>Update your photo and contact details. Membership fields are managed by administrators.</Text>
 
       <View style={styles.identityCard}>
-        <Image
-          source={{ uri: profile?.profilePhotoUrl || 'https://i.pravatar.cc/200?img=12' }}
-          style={styles.avatar}
-        />
+        <View>
+          <Image
+            source={{ uri: resolveMediaUrl(profile?.profilePhotoUrl, 'https://i.pravatar.cc/200?img=12') }}
+            style={styles.avatar}
+          />
+          <Pressable
+            style={[styles.cameraButton, uploadingPhoto && styles.disabled]}
+            onPress={choosePhoto}
+            disabled={uploadingPhoto}
+            accessibilityLabel="Update profile photo"
+          >
+            {uploadingPhoto ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Ionicons name="camera" size={18} color="#FFFFFF" />}
+          </Pressable>
+        </View>
         <View style={styles.identityText}>
           <Text style={styles.name}>{profile?.fullName ?? 'Loading...'}</Text>
           <Text style={styles.memberCode}>{profile?.memberCode ?? '—'}</Text>
           <Text style={styles.membership}>
             {profile?.membership?.membershipType ?? '—'} · {profile?.membership?.status ?? '—'}
           </Text>
+          <Pressable onPress={choosePhoto} disabled={uploadingPhoto}>
+            <Text style={styles.changePhoto}>Change photo</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -132,11 +211,25 @@ const styles = StyleSheet.create({
     padding: 18,
     marginTop: 20,
   },
-  avatar: { width: 70, height: 70, borderRadius: 20, backgroundColor: '#EAECF0' },
-  identityText: { marginLeft: 14, flex: 1 },
+  avatar: { width: 76, height: 76, borderRadius: 22, backgroundColor: '#EAECF0' },
+  cameraButton: {
+    position: 'absolute',
+    right: -6,
+    bottom: -6,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#175CD3',
+    borderWidth: 2,
+    borderColor: '#101828',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  identityText: { marginLeft: 16, flex: 1 },
   name: { color: '#FFFFFF', fontSize: 19, fontWeight: '800' },
   memberCode: { color: '#D0D5DD', fontSize: 12, marginTop: 4 },
   membership: { color: '#84CAFF', fontSize: 12, fontWeight: '700', marginTop: 8 },
+  changePhoto: { color: '#FFFFFF', fontSize: 12, fontWeight: '700', marginTop: 9, textDecorationLine: 'underline' },
   formCard: { backgroundColor: '#FFFFFF', borderRadius: 18, borderWidth: 1, borderColor: '#EAECF0', padding: 16, marginTop: 16 },
   label: { color: '#344054', fontSize: 12, fontWeight: '700', marginBottom: 7, marginTop: 9 },
   input: { minHeight: 48, borderWidth: 1, borderColor: '#D0D5DD', borderRadius: 12, paddingHorizontal: 13, color: '#101828' },

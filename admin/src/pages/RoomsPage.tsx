@@ -32,6 +32,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { api, getApiError } from '../api/client';
+import { ImageUploadField } from '../components/ImageUploadField';
 import { PageHeader } from '../components/PageHeader';
 import type { ApiResponse, BookingStatus, Room, RoomBooking, RoomStatus } from '../types/api';
 
@@ -59,6 +60,7 @@ export function RoomsPage() {
   const [editing, setEditing] = useState<Room | null>(null);
   const [form, setForm] = useState(emptyRoom);
   const [saving, setSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,6 +85,7 @@ export function RoomsPage() {
 
   const openDialog = (room?: Room) => {
     setEditing(room ?? null);
+    setImageFile(null);
     setForm(
       room
         ? {
@@ -108,14 +111,24 @@ export function RoomsPage() {
       amenities: form.amenities.split(',').map((item) => item.trim()).filter(Boolean),
     };
     try {
-      if (editing) {
-        await api.patch(`/admin/rooms/${editing.id}`, payload);
-        setMessage('Room updated. Availability searches will use the new state.');
-      } else {
-        await api.post('/admin/rooms', payload);
-        setMessage('Room created.');
+      const response = editing
+        ? await api.patch<ApiResponse<Room>>(`/admin/rooms/${editing.id}`, payload)
+        : await api.post<ApiResponse<Room>>('/admin/rooms', payload);
+      const savedRoom = response.data.data;
+
+      if (imageFile) {
+        const upload = new FormData();
+        upload.append('image', imageFile);
+        await api.post(`/admin/rooms/${savedRoom.id}/image`, upload, {
+          timeout: 45000,
+        });
       }
+
+      setMessage(editing
+        ? 'Room updated. Availability searches will use the new state.'
+        : 'Room created.');
       setDialogOpen(false);
+      setImageFile(null);
       await load();
     } catch (requestError) {
       setError(getApiError(requestError));
@@ -159,7 +172,8 @@ export function RoomsPage() {
             <Grid container spacing={2}>
               {rooms.map((room) => (
                 <Grid size={{ xs: 12, md: 6, xl: 4 }} key={room.id}>
-                  <Card variant="outlined" sx={{ height: '100%' }}>
+                  <Card variant="outlined" sx={{ height: '100%', overflow: 'hidden' }}>
+                    {room.imageUrl ? <Box component="img" src={room.imageUrl} alt={room.roomName} sx={{ width: '100%', height: 150, objectFit: 'cover' }} /> : null}
                     <CardContent>
                       <Box display="flex" justifyContent="space-between" gap={1}>
                         <Box display="flex" gap={1.25}>
@@ -235,7 +249,14 @@ export function RoomsPage() {
                 {roomStatuses.map((status) => <MenuItem key={status} value={status}>{status}</MenuItem>)}
               </Select>
             </FormControl>
-            <TextField label="Image URL" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} />
+            <ImageUploadField
+              label="Room image"
+              value={form.imageUrl}
+              file={imageFile}
+              onFileChange={setImageFile}
+              onError={setError}
+              aspectRatio="16 / 9"
+            />
             {editing?.bookings?.length ? <Alert severity="warning">This room has upcoming bookings. It cannot be marked unavailable or under maintenance until they are cancelled or completed.</Alert> : null}
           </Stack>
         </DialogContent>

@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "noImplicitAny": false,
+    "baseUrl": ".",
+    "paths": {
+      "@prisma/client": ["./validation/prisma-client.d.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "validation/**/*.d.ts"]
+}

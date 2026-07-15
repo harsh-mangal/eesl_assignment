@@ -2,27 +2,45 @@
   "expo": {
     "name": "Member Services",
     "slug": "member-services",
+    "scheme": "memberservices",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "splash": {
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#101828"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Member Services to select a profile photograph.",
+          "cameraPermission": "Allow Member Services to take a profile photograph."
+        }
+      ],
+      "expo-asset",
+      "expo-font"
+    ],
     "android": {
       "package": "com.memberservices.app",
       "versionCode": 1,
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#101828"
       }
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.memberservices.app"
+      "bundleIdentifier": "com.memberservices.app",
+      "buildNumber": "1"
     },
-    "plugins": [
-      "expo-asset",
-      "expo-font"
-    ]
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }

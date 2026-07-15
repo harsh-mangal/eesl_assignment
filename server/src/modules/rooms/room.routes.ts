@@ -4,6 +4,8 @@ import { authenticate } from '../../middleware/auth.js';
 import { authorize } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
 import { asyncHandler } from '../../utils/async-handler.js';
+import { imageUpload } from '../uploads/upload.middleware.js';
+import * as uploadController from '../uploads/upload.controller.js';
 import * as controller from './room.controller.js';
 import {
   adminListRoomsSchema,
@@ -29,5 +31,6 @@ adminRoomRouter.use(authenticate, authorize(Role.ADMIN));
 adminRoomRouter.get('/', validate(adminListRoomsSchema), asyncHandler(controller.adminList));
 adminRoomRouter.post('/', validate(createRoomSchema), asyncHandler(controller.adminCreate));
 adminRoomRouter.patch('/:id', validate(updateRoomSchema), asyncHandler(controller.adminUpdate));
+adminRoomRouter.post('/:id/image', imageUpload, validate(roomIdSchema), asyncHandler(uploadController.roomImage));
 adminRoomRouter.get('/bookings/list', validate(adminRoomBookingsSchema), asyncHandler(controller.adminBookings));
 adminRoomRouter.patch('/bookings/:id/status', validate(updateRoomBookingStatusSchema), asyncHandler(controller.adminUpdateBookingStatus));

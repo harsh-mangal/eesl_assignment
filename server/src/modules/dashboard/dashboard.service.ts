@@ -42,14 +42,16 @@ export async function getMemberDashboard(memberId: string) {
           checkInDate: { gte: today },
         },
       }),
-      prisma.eventBooking.count({
+      prisma.event.count({
+        where: { eventDate: { gte: today }, status: EventStatus.PUBLISHED },
+      }),
+      prisma.notificationRecipient.count({
         where: {
           memberId,
-          status: { in: [BookingStatus.PENDING, BookingStatus.CONFIRMED] },
-          event: { eventDate: { gte: today }, status: EventStatus.PUBLISHED },
+          isRead: false,
+          notification: { is: { publishAt: { lte: new Date() } } },
         },
       }),
-      prisma.notificationRecipient.count({ where: { memberId, isRead: false } }),
     ]);
 
   return {

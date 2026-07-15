@@ -1,12 +1,17 @@
 import {
+  AccountBalanceWalletOutlined,
   BadgeOutlined,
   BedOutlined,
   EventOutlined,
   GroupsOutlined,
+  MeetingRoomOutlined,
+  PeopleOutline,
+  PersonOffOutlined,
   PaymentsOutlined,
   ReceiptLongOutlined,
   RestaurantOutlined,
   StarOutline,
+  TodayOutlined,
 } from '@mui/icons-material';
 import { Alert, Box, CircularProgress, Grid, Paper, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -50,13 +55,20 @@ export function DashboardPage() {
   const stats = data.statistics;
   const cards = [
     ['Total Members', stats.totalMembers, <GroupsOutlined />],
+    ['Active Members', stats.activeMembers, <PeopleOutline />],
+    ['Inactive Members', stats.inactiveMembers, <PersonOffOutlined />],
     ['Active RFID Cards', stats.activeRfidCards, <BadgeOutlined />],
-    ['Restaurants', stats.totalRestaurants, <RestaurantOutlined />],
+    ['Blocked RFID Cards', stats.blockedRfidCards, <BadgeOutlined />],
+    ['Total Restaurants', stats.totalRestaurants, <RestaurantOutlined />],
+    ['Available Restaurant Slots', stats.availableRestaurantSlots, <RestaurantOutlined />],
     ['Available Rooms', stats.availableRooms, <BedOutlined />],
+    ['Unavailable Rooms', stats.unavailableRooms, <MeetingRoomOutlined />],
     ['Upcoming Events', stats.upcomingEvents, <EventOutlined />],
+    ["Today's Bookings", stats.todaysBookings, <TodayOutlined />],
     ['Pending Invoices', stats.pendingInvoices, <ReceiptLongOutlined />],
     ['Successful Payments', stats.successfulPayments, <PaymentsOutlined />],
-    ['Average Rating', stats.averageFeedbackRating, <StarOutline />],
+    ['Total Payment Amount', `₹${Number(stats.totalPaymentAmount ?? 0).toLocaleString('en-IN')}`, <AccountBalanceWalletOutlined />],
+    ['Average Feedback Rating', stats.averageFeedbackRating, <StarOutline />],
   ] as const;
 
   return (

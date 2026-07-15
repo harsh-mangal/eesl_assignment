@@ -330,3 +330,14 @@ export async function updateMember(
     });
   });
 }
+
+export async function replaceProfilePhoto(memberId: string, profilePhotoUrl: string) {
+  const existing = await prisma.member.findUnique({ where: { id: memberId }, select: { profilePhotoUrl: true } });
+  if (!existing) throw new ApiError(404, 'Member profile not found.');
+  const data = await prisma.member.update({
+    where: { id: memberId },
+    data: { profilePhotoUrl },
+    include: memberDetailInclude,
+  });
+  return { data, previousUrl: existing.profilePhotoUrl };
+}

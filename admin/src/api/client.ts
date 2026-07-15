@@ -2,9 +2,15 @@ import axios from 'axios';
 
 export const TOKEN_KEY = 'member_services_admin_token';
 
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, '');
+if (!configuredApiUrl && !import.meta.env.DEV) {
+  throw new Error('VITE_API_URL must be configured for a production Admin build.');
+}
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4001/api',
+  baseURL: configuredApiUrl || 'http://localhost:4001/api',
   timeout: 15000,
+  headers: { Accept: 'application/json' },
 });
 
 api.interceptors.request.use((config) => {

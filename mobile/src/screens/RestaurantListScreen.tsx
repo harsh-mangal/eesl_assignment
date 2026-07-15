@@ -15,6 +15,7 @@ import { buildDateOptions, DateStrip } from '../components/DateStrip';
 import { Screen } from '../components/Screen';
 import type { RootStackParamList } from '../navigation/types';
 import type { ApiResponse, Restaurant } from '../types/api';
+import { resolveMediaUrl } from '../utils/media';
 import { formatLocalDate } from '../utils/date';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RestaurantList'>;
@@ -57,7 +58,7 @@ export function RestaurantListScreen({ navigation }: Props) {
       ) : (
         restaurants.map((restaurant) => (
           <View key={restaurant.id} style={styles.card}>
-            {restaurant.imageUrl ? <Image source={{ uri: restaurant.imageUrl }} style={styles.image} /> : null}
+            {restaurant.imageUrl ? <Image source={{ uri: resolveMediaUrl(restaurant.imageUrl) }} style={styles.image} /> : null}
             <View style={styles.content}>
               <View style={styles.headingRow}>
                 <View style={{ flex: 1 }}>

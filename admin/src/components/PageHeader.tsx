@@ -11,7 +11,7 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <Box display="flex" alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" gap={2} mb={3}>
+    <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" gap={2} mb={3}>
       <Box>
         <Typography variant="h4" fontWeight={800}>
           {title}

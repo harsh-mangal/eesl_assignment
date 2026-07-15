@@ -16,6 +16,7 @@ import { QuantityStepper } from '../components/QuantityStepper';
 import { Screen } from '../components/Screen';
 import type { RootStackParamList } from '../navigation/types';
 import type { ApiResponse, RoomAvailability } from '../types/api';
+import { resolveMediaUrl } from '../utils/media';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RoomList'>;
 
@@ -80,7 +81,7 @@ export function RoomListScreen({ navigation }: Props) {
           </View>
           {availability.items.map((room) => (
             <View key={room.id} style={styles.card}>
-              {room.imageUrl ? <Image source={{ uri: room.imageUrl }} style={styles.image} /> : null}
+              {room.imageUrl ? <Image source={{ uri: resolveMediaUrl(room.imageUrl) }} style={styles.image} /> : null}
               <View style={styles.cardContent}>
                 <View style={styles.headingRow}>
                   <View style={{ flex: 1 }}><Text style={styles.roomName}>{room.roomName}</Text><Text style={styles.roomMeta}>Room {room.roomNumber} · {room.roomType}</Text></View>
