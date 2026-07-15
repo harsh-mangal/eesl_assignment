@@ -8,7 +8,7 @@ if (!configuredApiUrl && !import.meta.env.DEV) {
 }
 
 export const api = axios.create({
-  baseURL: configuredApiUrl || 'http://localhost:4001/api',
+  baseURL: configuredApiUrl || 'https://eesl.69.62.83.23.nip.io/api',
   timeout: 15000,
   headers: { Accept: 'application/json' },
 });

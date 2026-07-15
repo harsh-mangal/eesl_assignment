@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:4001/api
+@baseUrl = https://eesl.69.62.83.23.nip.io/api
 @adminToken = paste-admin-token
 @memberToken = paste-member-token
 
