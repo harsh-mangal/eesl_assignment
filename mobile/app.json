@@ -32,7 +32,10 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#101828"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "ios": {
       "supportsTablet": true,
@@ -41,6 +44,11 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7e260182-80a6-4f72-be4d-a29d9fefecc5"
+      }
     }
   }
 }
