@@ -1,82 +1,92 @@
-import { useState } from 'react';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { api, getApiError } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import type { ApiResponse, MemberSession } from '../types/api';
 
-function LoginScreen() {
+export function LoginScreen() {
   const setSession = useAuthStore((state) => state.setSession);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const passwordInputRef = useRef<TextInput>(null);
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const submit = async () => {
-    const cleanIdentifier = identifier.trim();
+  const scrollToPassword = () => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({
+        y: 110,
+        animated: true,
+      });
+    }, Platform.OS === 'ios' ? 150 : 250);
+  };
 
-    if (!cleanIdentifier || !password.trim()) {
+  const submit = async () => {
+    const normalizedIdentifier = identifier.trim();
+
+    if (!normalizedIdentifier) {
       Alert.alert(
-        'Check your details',
-        'Enter your email or Member ID and password.',
+        'Member ID required',
+        'Please enter your email address or Member ID.',
       );
+      return;
+    }
+
+    if (!password) {
+      Alert.alert('Password required', 'Please enter your password.');
       return;
     }
 
     if (password.length < 6) {
       Alert.alert(
         'Invalid password',
-        'Password must contain at least 6 characters.',
+        'Your password must contain at least 6 characters.',
       );
       return;
     }
 
-    try {
-      setSubmitting(true);
+    setSubmitting(true);
 
+    try {
       const response = await api.post<
         ApiResponse<{
           accessToken: string;
           user: MemberSession;
         }>
       >('/auth/login', {
-        identifier: cleanIdentifier,
+        identifier: normalizedIdentifier,
         password,
       });
 
-      const responseData = response.data?.data;
+      const { accessToken, user } = response.data.data;
 
-      if (!responseData?.accessToken || !responseData?.user) {
-        throw new Error('Invalid login response received from the server.');
-      }
-
-      if (responseData.user.role !== 'MEMBER') {
+      if (user.role !== 'MEMBER') {
         throw new Error(
-          'This mobile application is only available for member accounts.',
+          'Please use a member account in the mobile application.',
         );
       }
 
-      setSession(responseData.accessToken, responseData.user);
+      setSession(accessToken, user);
     } catch (error) {
       Alert.alert(
         'Login failed',
-        getApiError(
-          error,
-          'Unable to sign in. Please check your credentials and try again.',
-        ),
+        getApiError(error, 'Unable to sign in. Please try again.'),
       );
     } finally {
       setSubmitting(false);
@@ -89,108 +99,115 @@ function LoginScreen() {
       edges={['top', 'left', 'right', 'bottom']}
     >
       <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
       >
-        <View style={styles.content}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>MS</Text>
-          </View>
-
-          <Text style={styles.title}>Welcome back</Text>
-
-          <Text style={styles.subtitle}>
-            Sign in securely to access your member services.
-          </Text>
-
-          <View style={styles.form}>
-            <Text style={styles.label}>Email or Member ID</Text>
-
-            <TextInput
-              style={styles.input}
-              value={identifier}
-              onChangeText={setIdentifier}
-              placeholder="Enter email or Member ID"
-              placeholderTextColor="#98A2B3"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="username"
-              textContentType="username"
-              editable={!submitting}
-              returnKeyType="next"
-            />
-
-            <Text style={styles.label}>Password</Text>
-
-            <View style={styles.passwordWrap}>
-              <TextInput
-                style={styles.passwordInput}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Enter your password"
-                placeholderTextColor="#98A2B3"
-                secureTextEntry={secure}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="password"
-                textContentType="password"
-                editable={!submitting}
-                returnKeyType="done"
-                onSubmitEditing={() => {
-                  void submit();
-                }}
-              />
-
-              <Pressable
-                onPress={() => setSecure((current) => !current)}
-                disabled={submitting}
-                hitSlop={12}
-                accessibilityRole="button"
-                accessibilityLabel={secure ? 'Show password' : 'Hide password'}
-              >
-                <Ionicons
-                  name={secure ? 'eye-outline' : 'eye-off-outline'}
-                  size={22}
-                  color="#667085"
-                />
-              </Pressable>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={
+            Platform.OS === 'ios' ? 'interactive' : 'on-drag'
+          }
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          contentInsetAdjustmentBehavior="automatic"
+        >
+          <View style={styles.content}>
+            <View style={styles.logo}>
+              <Text style={styles.logoText}>MS</Text>
             </View>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                pressed && !submitting && styles.buttonPressed,
-                submitting && styles.buttonDisabled,
-              ]}
-              onPress={() => {
-                void submit();
-              }}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>Sign in</Text>
-              )}
-            </Pressable>
+            <Text style={styles.title}>Welcome back</Text>
+
+            <Text style={styles.subtitle}>
+              Access all your member services from one application.
+            </Text>
+
+            <View style={styles.form}>
+              <Text style={styles.label}>Email or Member ID</Text>
+
+              <TextInput
+                style={styles.input}
+                value={identifier}
+                onChangeText={setIdentifier}
+                editable={!submitting}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="username"
+                textContentType="username"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => {
+                  passwordInputRef.current?.focus();
+                }}
+                placeholder="Enter email or Member ID"
+                placeholderTextColor="#98A2B3"
+              />
+
+              <Text style={styles.label}>Password</Text>
+
+              <View style={styles.passwordWrap}>
+                <TextInput
+                  ref={passwordInputRef}
+                  style={styles.passwordInput}
+                  value={password}
+                  onChangeText={setPassword}
+                  editable={!submitting}
+                  secureTextEntry={secure}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="password"
+                  textContentType="password"
+                  returnKeyType="done"
+                  onFocus={scrollToPassword}
+                  onSubmitEditing={() => void submit()}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#98A2B3"
+                />
+
+                <Pressable
+                  style={styles.eyeButton}
+                  onPress={() => setSecure((currentValue) => !currentValue)}
+                  disabled={submitting}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    secure ? 'Show password' : 'Hide password'
+                  }
+                >
+                  <Ionicons
+                    name={secure ? 'eye-outline' : 'eye-off-outline'}
+                    size={22}
+                    color="#667085"
+                  />
+                </Pressable>
+              </View>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  pressed && !submitting && styles.buttonPressed,
+                  submitting && styles.disabled,
+                ]}
+                onPress={() => void submit()}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.buttonText}>Sign in</Text>
+                )}
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-/*
- * Both exports are provided so this screen works with:
- *
- * import LoginScreen from './LoginScreen';
- *
- * and:
- *
- * import { LoginScreen } from './LoginScreen';
- */
-export { LoginScreen };
-export default LoginScreen;
 
 const styles = StyleSheet.create({
   safe: {
@@ -198,15 +215,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#F6F8FB',
   },
 
-  container: {
+  keyboardView: {
     flex: 1,
   },
 
-  content: {
+  scrollView: {
     flex: 1,
+  },
+
+  container: {
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 30,
+    paddingTop: 32,
+    paddingBottom: 60,
+  },
+
+  content: {
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
 
   logo: {
@@ -271,7 +299,7 @@ const styles = StyleSheet.create({
     height: 50,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingLeft: 14,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#D0D5DD',
@@ -280,10 +308,17 @@ const styles = StyleSheet.create({
 
   passwordInput: {
     flex: 1,
+    height: '100%',
     paddingVertical: 0,
-    paddingRight: 12,
     color: '#101828',
     fontSize: 15,
+  },
+
+  eyeButton: {
+    width: 50,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   button: {
@@ -299,7 +334,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
 
-  buttonDisabled: {
+  disabled: {
     opacity: 0.65,
   },
 
