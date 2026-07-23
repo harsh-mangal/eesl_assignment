@@ -17,6 +17,9 @@ const QrVerificationPage = lazy(() => import('./pages/QrVerificationPage').then(
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then((module) => ({ default: module.NotificationsPage })));
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage').then((module) => ({ default: module.FeedbackPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage').then((module) => ({ default: module.PrivacyPolicyPage })));
+const TermsAndConditionsPage = lazy(() => import('./pages/TermsAndConditionsPage').then((module) => ({ default: module.TermsAndConditionsPage })));
+const AccountDeletionPage = lazy(() => import('./pages/AccountDeletionPage').then((module) => ({ default: module.AccountDeletionPage })));
 
 function RouteLoader() {
   return (
@@ -31,6 +34,9 @@ export default function App() {
     <Suspense fallback={<RouteLoader />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
+        <Route path="/account-deletion" element={<AccountDeletionPage />} />
         <Route
           element={
             <ProtectedRoute>

@@ -262,7 +262,7 @@ export function RoomsPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setDialogOpen(false)}>Cancel</Button><Button variant="contained" disabled={saving} onClick={() => void saveRoom()}>{saving ? 'Saving…' : 'Save room'}</Button></DialogActions>
       </Dialog>
-      <Snackbar open={Boolean(message)} autoHideDuration={4001} onClose={() => setMessage('')} message={message} />
+      <Snackbar open={Boolean(message)} autoHideDuration={4000} onClose={() => setMessage('')} message={message} />
     </>
   );
 }

@@ -346,7 +346,7 @@ export function RestaurantsPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setSlotDialog(false)}>Cancel</Button><Button variant="contained" disabled={saving} onClick={() => void saveSlot()}>{saving ? 'Saving…' : 'Save slot'}</Button></DialogActions>
       </Dialog>
-      <Snackbar open={Boolean(message)} autoHideDuration={4001} onClose={() => setMessage('')} message={message} />
+      <Snackbar open={Boolean(message)} autoHideDuration={4000} onClose={() => setMessage('')} message={message} />
     </>
   );
 }
